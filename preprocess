@@ -1,0 +1,22 @@
+function [newDocuments,pubYr,bag,bag_n] = preprocess(textData,pubYr)
+
+cleanTextData = erasePunctuation(textData);
+cleanTextData = lower(cleanTextData);
+cleanTextData = replace(cleanTextData,"sealevel","level");
+documents = tokenizedDocument(cleanTextData);
+[documents,pubYr] = docstoRemove(documents,pubYr);
+
+documents = removeShortWords(documents,3);
+documents = removeLongWords(documents,20);
+documents = removeWords(documents,stopWords);
+
+documents = normalizeWords(documents);
+[commonWords] = wordstoRemove;
+documents = removeWords(documents,commonWords);
+[newDocuments,idx] = removeEmptyDocuments(documents);
+pubYr(idx,:) = [];
+
+bag = bagOfWords(newDocuments);
+bag = removeInfrequentWords(bag,3);
+bag_n = bagOfNgrams(newDocuments);
+end
