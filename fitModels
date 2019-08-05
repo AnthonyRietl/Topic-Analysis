@@ -1,0 +1,80 @@
+function fitModels(numTopics,bag,bag_n,pubYr,outputfilename)
+
+spmd
+%%bagofWords
+disp('Fitting bagofWords')
+mdl_1 = fitlda(bag,numTopics,'verbose', 0);
+max_prob_1 = ones(length(mdl_1.DocumentTopicProbabilities),1);
+topic_num_1 = ones(length(mdl_1.DocumentTopicProbabilities),1);
+
+    for i = 1:length(mdl_1.DocumentTopicProbabilities)
+        [M,I] = max(mdl_1.DocumentTopicProbabilities(i,:));
+        max_prob_1(i) = M;
+        topic_num_1(i) = I;
+    end
+
+doc_1 = 1:length(mdl_1.DocumentTopicProbabilities);
+doc_1 = categorical(doc_1);
+docName_1 = cellstr(doc_1)';
+topic_1 = categorical(topic_num_1);
+year_1 = categorical(pubYr, 'Ordinal', true);
+A_1 = table(topic_1,year_1,'RowNames',docName_1);
+A1_1 = groupsummary(A_1,{'topic_1','year_1'});
+
+topic_cat_1 = A1_1.topic_1;
+group_cat_1 = A1_1.GroupCount;%subt mean and divde by stdev
+year_cat_1 = A1_1.year_1;
+
+glmeVars_1 = table(topic_cat_1,group_cat_1,year_cat_1);
+disp('Fitting bagofWords glme')
+bag_words_model = fitglme(glmeVars_1, 'group_cat_1 ~ topic_cat_1 + (topic_cat_1 | year_cat_1)','Distribution','Poisson',...
+    'verbose', 0, 'StartMethod', 'random');
+
+%%bagofNgrams
+disp('Fitting bagofNgrams')
+mdl_2 = fitlda(bag_n,numTopics,'verbose', 0);
+max_prob_2 = ones(length(mdl_2.DocumentTopicProbabilities),1);
+topic_num_2 = ones(length(mdl_2.DocumentTopicProbabilities),1);
+
+    for ii = 1:length(mdl_2.DocumentTopicProbabilities)
+        [M,I] = max(mdl_2.DocumentTopicProbabilities(ii,:));
+        max_prob_2(ii) = M;
+        topic_num_2(ii) = I;
+    end
+
+doc_2 = 1:length(mdl_2.DocumentTopicProbabilities);
+doc_2 = categorical(doc_2);
+docName_2 = cellstr(doc_2)';
+topic_2 = categorical(topic_num_2);
+year_2 = categorical(pubYr, 'Ordinal', true);
+A_2 = table(topic_2,year_2,'RowNames',docName_2);
+A1_2 = groupsummary(A_2,{'topic_2','year_2'});
+
+topic_cat_2 = A1_2.topic_2;
+group_cat_2 = A1_2.GroupCount;%subt mean and divde by stdev
+year_cat_2 = A1_2.year_2;
+
+glmeVars_2 = table(topic_cat_2,group_cat_2,year_cat_2);
+disp('Fitting bagofNgrams glme')
+bag_ngrams_model = fitglme(glmeVars_2, 'group_cat_2 ~ topic_cat_2 + (topic_cat_2 | year_cat_2)','Distribution','Poisson',...
+    'verbose', 0, 'StartMethod', 'random');
+end
+
+ldaFit_words=bag_words_model{:};
+mdl_words=mdl_1{:};
+glmeVars_words=glmeVars_1{:};
+
+ldaFit_ngrams=bag_ngrams_model{:};
+mdl_ngrams=mdl_2{:};
+glmeVars_ngrams=glmeVars_2{:};
+
+save([outputfilename 'ldaFit_words.mat'],'ldaFit_words')
+save([outputfilename 'mdl_words.mat'],'mdl_words')
+save([outputfilename 'glmeVars_words.mat'],'glmeVars_words')
+
+save([outputfilename 'ldaFit_ngrams.mat'],'ldaFit_ngrams')
+save([outputfilename 'mdl_ngrams.mat'],'mdl_ngrams')
+save([outputfilename 'glmeVars_ngrams.mat'],'glmeVars_ngrams')
+
+save([outputfilename 'bag.mat'],'bag')
+save([outputfilename 'bag_n.mat'],'bag_n')
