@@ -1,0 +1,40 @@
+function AnalyzeText  %Anthony J. Rietl (ajrietl@vims.edu)
+
+prompt = 'Enter folder name for saving files ';
+x = input(prompt,'s');
+folder = x;
+outputfilename = ['run files/' folder '/'];
+if ~exist(outputfilename, 'dir')
+   mkdir(outputfilename);
+end
+
+file = uigetfile;%import, currently set up for .csv
+T = readtable(file,'TextType','string');
+idx = T.AB == '';%AB is the heading for absracts by default in WebofSci. export
+T(idx,:) = [];
+%T = T(1:50,1:end);
+
+abstracts = string(T.AB);%abstracts for a WebofSci. export
+pubYr = T.PY;%(idx,:);%publication year for a WebofSci. export
+textData = abstracts;
+
+[newDocuments,pubYr,bag,bag_n] = preprocess(textData,pubYr);%Clean data
+
+prompt1 = 'Do you need an estimate for number of topics in LDA? y/n ';
+str = input(prompt1,'s');
+if str == 'y'
+    prompt2 = 'Enter the topic range (ex. [1 5 10 20 40] ';
+    x1 = input(prompt2);
+    numTopicsRange = x1;
+    disp('Running topics...')
+    topics(newDocuments,numTopicsRange);
+    disp('Check the graph and decide on the number of topic for LDA. Then rerun the model and enter the value by selecting -n- when asked to run estimate for number of topics')
+    return
+elseif str == 'n'
+    prompt3 = 'Enter the number of topics for LDA ';
+    x2 = input(prompt3);
+    numTopics = x2;
+    disp('Continuing...')
+end
+
+fitModels(numTopics,bag,bag_n,pubYr,outputfilename);
